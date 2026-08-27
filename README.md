@@ -107,4 +107,4 @@ The test suite covers the TypeScript API and the built CLI. The CI workflow veri
 
 ## Releases
 
-The `cd.yml` workflow creates npm releases from conventional commits pushed to `main`. Its first publish is deliberately manual so that npm Trusted Publishing can be configured against an existing package and repository. After that, configure npm Trusted Publishing for this repository and let the workflow create version commits, `v*` tags, npm releases and GitHub releases.
+The `cd.yml` workflow creates npm releases from conventional commits pushed to `main`. 
