@@ -1,0 +1,59 @@
+{
+  "name": "@bigfootds/nodejs-semver-updater",
+  "version": "0.0.1",
+  "description": "Update a Node.js project's package version and related JSON version properties from Node.js or the command line.",
+  "license": "MIT",
+  "author": "BigfootDS",
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "test": "npm run build && node --test test/*.test.js",
+    "pack:check": "npm pack --dry-run",
+    "prepack": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BigfootDS/pkg-nodejs-semver-updater"
+  },
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/BigfootDS/pkg-nodejs-semver-updater/issues"
+  },
+  "homepage": "https://github.com/BigfootDS/pkg-nodejs-semver-updater#readme",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "nodejs-semver-updater": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "keywords": [
+    "nodejs",
+    "node",
+    "npm",
+    "package-json",
+    "semver",
+    "version",
+    "cli"
+  ],
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "typescript": "^7.0.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

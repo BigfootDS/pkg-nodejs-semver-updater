@@ -1,0 +1,71 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Release npm package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.x
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - run: npm ci
+      - run: npm test
+      - run: npm run pack:check
+      - id: release-plan
+        name: Determine release version
+        run: node scripts/release.mjs --prepare >> "$GITHUB_OUTPUT"
+      - name: Commit and tag release
+        if: steps.release-plan.outputs.release == 'true'
+        env:
+          RELEASE_TAG: ${{ steps.release-plan.outputs.tag }}
+          RELEASE_VERSION: ${{ steps.release-plan.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "chore(release): $RELEASE_VERSION [skip ci]"
+          git tag -a "$RELEASE_TAG" -m "$RELEASE_TAG"
+          git push origin HEAD:main "$RELEASE_TAG"
+      - id: recovery
+        name: Detect an interrupted release
+        if: steps.release-plan.outputs.release == 'false'
+        run: |
+          package_name="$(node -p "require('./package.json').name")"
+          package_version="$(node -p "require('./package.json').version")"
+          release_tag="v$package_version"
+          if git tag --points-at HEAD --list "$release_tag" | grep -Fx "$release_tag" >/dev/null; then
+            echo "tag=$release_tag" >> "$GITHUB_OUTPUT"
+            if ! npm view "$package_name@$package_version" version >/dev/null 2>&1; then
+              echo "publish=true" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+      - name: Publish package
+        if: steps.release-plan.outputs.release == 'true' || steps.recovery.outputs.publish == 'true'
+        run: npm publish --access public
+      - name: Create GitHub release
+        if: steps.release-plan.outputs.release == 'true' || steps.recovery.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release-plan.outputs.tag || steps.recovery.outputs.tag }}
+        run: |
+          gh release view "$RELEASE_TAG" >/dev/null 2>&1 || \
+            gh release create "$RELEASE_TAG" --generate-notes --title "$RELEASE_TAG"
