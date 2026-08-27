@@ -1,6 +1,6 @@
 {
   "name": "@bigfootds/nodejs-semver-updater",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "Update a Node.js project's package version and related JSON version properties from Node.js or the command line.",
   "license": "MIT",
   "author": "BigfootDS",
