@@ -37,6 +37,7 @@ test("updates package.json without changing unrelated properties", async () => {
         filePath: packagePath,
         jsonPointer: "/version",
         previousVersion: "1.0.0",
+        version: "1.2.3",
         changed: true,
       },
     ],
@@ -175,6 +176,28 @@ test("allows custom version strings when requested", async () => {
   });
 
   assert.equal(JSON.parse(await readFile(packagePath, "utf8")).version, "2026.08-nightly");
+});
+
+test("writes an explicit display version without weakening package version validation", async () => {
+  const { packagePath } = await createProject({
+    "package.json": '{"name":"example","version":"1.0.0","gameVersion":"Version 1.0.0 beta"}\n',
+  });
+
+  await updateNodeProjectVersion({
+    packagePath,
+    version: "1.2.3",
+    additionalVersionProperties: [{
+      filePath: packagePath,
+      jsonPointer: "/gameVersion",
+      value: "Version 1.2.3 beta",
+    }],
+  });
+
+  assert.deepEqual(JSON.parse(await readFile(packagePath, "utf8")), {
+    name: "example",
+    version: "1.2.3",
+    gameVersion: "Version 1.2.3 beta",
+  });
 });
 
 test("the command-line interface updates configured JSON properties", async () => {

@@ -71,6 +71,14 @@ console.log(result.changed);
 
 Set `validateSemver: false` to accept version strings outside Semantic Versioning, and `dryRun: true` to inspect planned changes without writing them.
 
+An additional property can instead receive its own exact string. This keeps npm's required SemVer value separate from a display version:
+
+```ts
+additionalVersionProperties: [
+  { filePath: "package.json", jsonPointer: "/gameVersion", value: "Game v1.2.3-beta" },
+]
+```
+
 ## Electron, Capacitor and native configuration
 
 For standard Electron Builder projects, the app version comes from `package.json` by default, so no extra configuration is needed. See Electron Builder's [configuration reference](https://www.electron.build/configuration.html) for projects that override that default.
@@ -107,4 +115,4 @@ The test suite covers the TypeScript API and the built CLI. The CI workflow veri
 
 ## Releases
 
-The `cd.yml` workflow creates npm releases from conventional commits pushed to `main`. 
+The `cd.yml` workflow creates npm releases from conventional commits pushed to `main`.

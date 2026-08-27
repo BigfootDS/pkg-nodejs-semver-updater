@@ -4,7 +4,7 @@ import { isSemanticVersion } from "./semver.js";
 type JsonObject = Record<string, unknown>;
 
 /**
- * Describes an additional JSON string property that should mirror the package version.
+ * Describes an additional JSON string property to update alongside package version.
  *
  * `jsonPointer` uses the [RFC 6901 JSON Pointer](https://www.rfc-editor.org/rfc/rfc6901)
  * format. For example, `/appVersion` targets a root property and
@@ -15,6 +15,13 @@ export interface JsonVersionProperty {
   filePath: string;
   /** JSON Pointer identifying the version string within `filePath`. */
   jsonPointer: string;
+  /**
+   * Exact string to write instead of the package version.
+   *
+   * This is useful for display-version fields whose host application accepts a
+   * richer format than npm accepts in `package.json.version`.
+   */
+  value?: string;
   /** Add the final property when its parent object exists but it is currently missing. */
   create?: boolean;
 }
@@ -23,9 +30,9 @@ export interface JsonVersionProperty {
 export interface UpdateNodeProjectVersionOptions {
   /** Path to the primary Node.js package manifest. @defaultValue `package.json` */
   packagePath?: string;
-  /** Version written to `package.json` and every configured additional property. */
+  /** Version written to `package.json` and properties without an explicit `value`. */
   version: string;
-  /** JSON version strings that should be kept aligned with `package.json`. */
+  /** JSON version strings that mirror the package version or receive explicit values. */
   additionalVersionProperties?: readonly JsonVersionProperty[];
   /** Validate the supplied version using Semantic Versioning rules. @defaultValue true */
   validateSemver?: boolean;
@@ -38,6 +45,8 @@ export interface UpdatedJsonVersionProperty {
   filePath: string;
   jsonPointer: string;
   previousVersion?: string;
+  /** String written to this individual JSON property. */
+  version: string;
   changed: boolean;
 }
 
@@ -104,9 +113,10 @@ export async function updateNodeProjectVersion(
     }
 
     const previousVersion = existing.value as string | undefined;
-    const changed = previousVersion !== options.version;
+    const version = property.value ?? options.version;
+    const changed = previousVersion !== version;
     if (changed) {
-      setJsonPointerValue(document.value, pointer, options.version, property.create === true);
+      setJsonPointerValue(document.value, pointer, version, property.create === true);
       document.changed = true;
     }
 
@@ -114,6 +124,7 @@ export async function updateNodeProjectVersion(
       filePath: property.filePath,
       jsonPointer: property.jsonPointer,
       ...(previousVersion === undefined ? {} : { previousVersion }),
+      version,
       changed,
     });
   }
@@ -155,6 +166,9 @@ function validateOptions(
   for (const property of properties) {
     if (property.filePath.trim().length === 0) throw new Error("filePath must not be empty.");
     parseJsonPointer(property.jsonPointer);
+    if (property.value !== undefined && property.value.trim().length === 0) {
+      throw new Error(`${describeProperty(property)} value must not be empty when supplied.`);
+    }
 
     const identity = `${property.filePath}\0${property.jsonPointer}`;
     if (seenProperties.has(identity)) {
